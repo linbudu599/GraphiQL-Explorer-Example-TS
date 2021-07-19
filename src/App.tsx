@@ -18,14 +18,6 @@ type AppState = {
   explorerIsOpen: boolean;
 };
 
-// const GraphiQLExampleApp: React.FC = () => {
-//   return (
-//     <>
-//       <h1>1</h1>
-//     </>
-//   );
-// };
-
 export default class GraphiQLExampleApp extends Component<{}, AppState> {
   _graphiql = new GraphiQL({
     fetcher,
@@ -43,8 +35,6 @@ export default class GraphiQLExampleApp extends Component<{}, AppState> {
     })
       .then((result) => {
         const editor = this._graphiql.getQueryEditor()!;
-
-        editor.setOption("extraKeys", {});
 
         editor.setOption("extraKeys", {
           "Shift-Alt-LeftClick": this

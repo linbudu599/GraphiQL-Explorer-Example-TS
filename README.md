@@ -4,5 +4,6 @@ This project is TypeScript version of the origin [graphiql-explorer-example](htt
 
 - [x]  Updated API usage.
 - [x] Develop by [Parcel](https://parceljs.org/).
-- [ ] Function Component & React Hooks translation.
-- [ ] Full Type Definition for [graphiql-explorer](https://github.com/OneGraph/graphiql-explorer)
+- [x] Function Component & React Hooks translation.
+- [ ] Full Type Definition for [graphiql-explorer](https://github.com/OneGraph/graphiql-explorer).
+- [ ] TypeScript version of graphiql-explorer lib.
