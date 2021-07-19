@@ -2,7 +2,7 @@ import React, { Component } from "react";
 import GraphiQL from "graphiql";
 import GraphiQLExplorer from "graphiql-explorer";
 import { buildClientSchema, getIntrospectionQuery, parse } from "graphql";
-// import { makeDefaultArg, getDefaultScalarArgValue } from "./CustomArgs";
+import { makeDefaultArg, getDefaultScalarArgValue } from "./CustomArgs";
 import CodeMirror, { KeyMap } from "codemirror";
 
 import "graphiql/graphiql.css";
@@ -64,7 +64,7 @@ export default class GraphiQLExampleApp extends Component<{}, AppState> {
   _handleInspectOperation = (
     codeMirror: CodeMirror.Editor,
     mousePos: CodeMirrorMousePos
-  ) => {
+  ): boolean | null | void => {
     // GraphQL AST 信息
     // kind、definitions、loc（Location2）
     const parsedQuery = parse(this.state.query || "");
@@ -162,8 +162,8 @@ export default class GraphiQLExampleApp extends Component<{}, AppState> {
             }}
             explorerIsOpen={this.state.explorerIsOpen}
             onToggleExplorer={this._handleToggleExplorer}
-            // getDefaultScalarArgValue={getDefaultScalarArgValue}
-            // makeDefaultArg={makeDefaultArg}
+            getDefaultScalarArgValue={getDefaultScalarArgValue}
+            makeDefaultArg={makeDefaultArg}
           />
           <GraphiQL
             ref={(ref) => (this._graphiql = ref!)}
