@@ -1,0 +1,74 @@
+{
+  "name": "GraphiQL-Explorer-Example-TS",
+  "version": "0.0.1",
+  "scripts": {
+    "dev": "parcel serve ./src/index.html --port 3000",
+    "build": "rimraf -rf ./dist/app && parcel build ./src/index.html --target app",
+    "clean": "rimraf -rf ./node_modules",
+    "test": "jest",
+    "commit": "git add -A && git-cz"
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "pretty-quick --staged",
+      "commit-msg": "commitlint -E HUSKY_GIT_PARAMS"
+    }
+  },
+  "app": "./dist/app/index.html",
+  "appModern": "./dist/appModern/index.html",
+  "source": [
+    "src/*"
+  ],
+  "config": {
+    "commitizen": {
+      "path": "node_modules/cz-customizable"
+    }
+  },
+  "alias": {
+    "@/pages": "./src/pages",
+    "@/components": "./src/components"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "codemirror": "^5.62.0",
+    "graphiql": "^1.4.2",
+    "graphiql-explorer": "^0.6.3",
+    "graphql": "^15.5.1",
+    "react": "^17.0.2",
+    "react-dom": "^17.0.2",
+    "tslib": "^2.3.0",
+    "typescript": "^4.3.5"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.14.6",
+    "@babel/preset-env": "^7.14.7",
+    "@babel/preset-react": "^7.14.5",
+    "@babel/preset-typescript": "^7.14.5",
+    "@commitlint/cli": "^12.1.4",
+    "@commitlint/config-conventional": "^12.1.4",
+    "@ice/spec": "^1.0.1",
+    "@jest/core": "^27.0.6",
+    "@parcel/transformer-image": "2.0.0-beta.3.1",
+    "@testing-library/react-hooks": "^7.0.1",
+    "@types/codemirror": "^5.60.2",
+    "@types/jest": "^26.0.24",
+    "@types/node": "^16.3.3",
+    "@types/react": "^17.0.14",
+    "@types/react-dom": "^17.0.9",
+    "@types/react-router-dom": "^5.1.8",
+    "@typescript-eslint/parser": "^4.28.3",
+    "babel-jest": "^27.0.6",
+    "eslint": "^7.31.0",
+    "eslint-plugin-react": "^7.24.0",
+    "identity-obj-proxy": "^3.0.0",
+    "jest": "^27.0.6",
+    "parcel": "^2.0.0-beta.3.1",
+    "prettier": "^2.3.2",
+    "pretty-quick": "^3.1.1",
+    "rimraf": "^3.0.2",
+    "stylelint": "^13.13.1",
+    "stylelint-config-standard": "^22.0.0",
+    "ts-jest": "^27.0.3",
+    "ts-node": "^10.1.0"
+  }
+}
