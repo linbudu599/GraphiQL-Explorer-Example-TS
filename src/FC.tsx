@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import GraphiQL from "graphiql";
 import GraphiQLExplorer from "graphiql-explorer";
+// import GraphiQLExplorer from "./Explorer/components/Explorer";
 import { buildClientSchema, getIntrospectionQuery, parse } from "graphql";
 import { makeDefaultArg, getDefaultScalarArgValue } from "./CustomArgs";
 import CodeMirror, { KeyMap } from "codemirror";
@@ -44,12 +45,12 @@ const GraphiQLExampleApp: React.FC = () => {
       query: getIntrospectionQuery(),
     })
       .then((result) => {
-        const editor = graphiqlIns.getQueryEditor()!;
+        // const editor = graphiqlIns.getQueryEditor()!;
 
-        editor.setOption("extraKeys", {
-          "Shift-Alt-LeftClick":
-            handleInspectOperation as unknown as KeyMap[string],
-        });
+        // editor.setOption("extraKeys", {
+        //   "Shift-Alt-LeftClick":
+        //     handleInspectOperation as unknown as KeyMap[string],
+        // });
 
         setAppState({ ...appState, schema: buildClientSchema(result.data) });
       })
@@ -101,15 +102,15 @@ const GraphiQLExampleApp: React.FC = () => {
       def.kind === "OperationDefinition"
         ? def.operation
         : def.kind === "FragmentDefinition"
-        ? "fragment"
-        : "unknown";
+          ? "fragment"
+          : "unknown";
 
     const operationName =
       def.kind === "OperationDefinition" && !!def.name
         ? def.name.value
         : def.kind === "FragmentDefinition" && !!def.name
-        ? def.name.value
-        : "unknown";
+          ? def.name.value
+          : "unknown";
 
     const selector = `.graphiql-explorer-root #${operationKind}-${operationName}`;
 
@@ -131,6 +132,7 @@ const GraphiQLExampleApp: React.FC = () => {
         {/* TODO: provide type definitions */}
         {/* @ts-ignore */}
         <GraphiQLExplorer
+          // @ts-ignore
           schema={schema}
           query={query}
           onEdit={handleEditQuery}
