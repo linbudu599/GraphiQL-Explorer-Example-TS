@@ -1,12 +1,13 @@
-// @ts-nocheck
+import React from "react";
 import {
   DocumentNode,
   OperationDefinitionNode,
   FragmentDefinitionNode,
   DefinitionNode,
+  print,
   GraphQLObjectType,
+  ASTNode,
 } from "graphql";
-import React, { Props } from "react";
 import {
   defaultColors,
   defaultCheckboxChecked,
@@ -18,33 +19,47 @@ import {
   capitalize,
   Attribution,
 } from "../constants";
-import { State, NewOperationType, AvailableFragments } from "../types";
+import {
+  ExplorerProps,
+  ExplorerState,
+  NewOperationType,
+  AvailableFragments,
+} from "../types";
 import {
   defaultGetDefaultFieldNames,
   defaultGetDefaultScalarArgValue,
   memoizeParseQuery,
 } from "../utils";
 import RootView from "./RootView";
+import {
+  generateActionElements,
+  generateActionOptions,
+} from "./refactor/Explorer";
 
-export default class Explorer extends React.PureComponent<Props<any>, State> {
+export default class Explorer extends React.PureComponent<
+  ExplorerProps,
+  ExplorerState
+> {
   static defaultProps = {
     getDefaultFieldNames: defaultGetDefaultFieldNames,
     getDefaultScalarArgValue: defaultGetDefaultScalarArgValue,
   };
 
-  state: any = {
+  state: ExplorerState = {
     newOperationType: "query",
     operation: null,
     operationToScrollTo: null,
   };
 
   _ref?: any;
+
   _resetScroll = () => {
     const container = this._ref;
     if (container) {
       container.scrollLeft = 0;
     }
   };
+
   componentDidMount() {
     this._resetScroll();
   }
@@ -68,49 +83,103 @@ export default class Explorer extends React.PureComponent<Props<any>, State> {
   };
 
   render() {
+    // GraphQL Schema、初始 query、默认参数的处理逻辑
     const { schema, query, makeDefaultArg } = this.props;
 
     if (!schema) {
       return (
         <div style={{ fontFamily: "sans-serif" }} className="error-container">
-          No Schema Available
+          [GraphiQL-Explorer]No Schema Available
         </div>
       );
     }
+
+    // TODO: 类型定义
     const styleConfig = {
+      // 各部分默认颜色
       colors: this.props.colors || defaultColors,
+      // 字段勾选组件
       checkboxChecked: this.props.checkboxChecked || defaultCheckboxChecked,
+      // 字段未勾选组件
       checkboxUnchecked:
         this.props.checkboxUnchecked || defaultCheckboxUnchecked,
+      // 关闭箭头组件
       arrowClosed: this.props.arrowClosed || defaultArrowClosed,
+      // 开启箭头组件
       arrowOpen: this.props.arrowOpen || defaultArrowOpen,
       styles: this.props.styles
         ? {
-            ...defaultStyles,
-            ...this.props.styles,
-          }
+          ...defaultStyles,
+          ...this.props.styles,
+        }
         : defaultStyles,
     };
+
+    // astNode: undefined
+    // description: null
+    // extensionASTNodes: undefined
+    // extensions: undefined
+    // isTypeOf: undefined
+    // name: "Query"
+    // _fields: { me: { … }, airtable: { … }, apollo: { … }, asana: { … }, box: { … }, … }
+    // _interfaces: []
     const queryType = schema.getQueryType();
+    console.log("queryType: ", queryType);
     const mutationType = schema.getMutationType();
+    console.log("mutationType: ", mutationType);
     const subscriptionType = schema.getSubscriptionType();
+
+    // 至少需要存在一个可用的操作类型
     if (!queryType && !mutationType && !subscriptionType) {
       return <div>Missing query type</div>;
     }
+
+    // 获取操作类型下的所有字段
     const queryFields = queryType && queryType.getFields();
     const mutationFields = mutationType && mutationType.getFields();
     const subscriptionFields = subscriptionType && subscriptionType.getFields();
 
+    // { kind: "Document", definitions: Array(3), loc: undefined }
+    // definitions: Array(3)
+    // 0: { kind: "OperationDefinition", operation: "query", name: { … }, variableDefinitions: Array(0), directives: Array(0), … }
+    // 1: { kind: "OperationDefinition", operation: "query", name: { … }, variableDefinitions: Array(0), directives: Array(0), … }
+    // 2: { kind: "FragmentDefinition", name: { … }, typeCondition: { … }, directives: Array(0), selectionSet: { … }, … }
+    // length: 3
+    // __proto__: Array(0)
+    // kind: "Document"
+    // loc: undefined
+
+    // directives: []
+    // kind: "OperationDefinition"
+    // loc: undefined
+    // name: { kind: "Name", value: "npmPackage", loc: undefined }
+    // operation: "query"
+    // selectionSet: { kind: "SelectionSet", selections: Array(1), loc: undefined }
+    // variableDefinitions: []
     const parsedQuery: DocumentNode = memoizeParseQuery(query);
+    console.log("parsedQuery: ", parsedQuery);
+
+    // 获取默认查询的字段？这个和example是啥关系？
+    // 应该就是查看对象类型中是否有id这样的关键字段
     const getDefaultFieldNames =
       this.props.getDefaultFieldNames || defaultGetDefaultFieldNames;
+
+    // __typename
+    console.log(
+      "getDefaultFieldNames: ",
+      getDefaultFieldNames(queryType as GraphQLObjectType)
+    );
+
     const getDefaultScalarArgValue =
       this.props.getDefaultScalarArgValue || defaultGetDefaultScalarArgValue;
 
     const definitions = parsedQuery.definitions;
 
+    // 返回相关操作
+    // TODO: iql中除了这两个还能输入哪种？
     const _relevantOperations = definitions
       .map((definition) => {
+        // 对于对象类型定义与片段定义 直接返回
         if (definition.kind === "FragmentDefinition") {
           return definition;
         } else if (definition.kind === "OperationDefinition") {
@@ -120,15 +189,18 @@ export default class Explorer extends React.PureComponent<Props<any>, State> {
         }
       })
       .filter(Boolean);
+    // 等同于definitions？
+    console.log("_relevantOperations: ", _relevantOperations);
 
+    // 默认展开一个MyQuery Query
     const relevantOperations =
       // If we don't have any relevant definitions from the parsed document,
       // then at least show an expanded Query selection
-      _relevantOperations.length === 0
+      (_relevantOperations.length === 0
         ? DEFAULT_DOCUMENT.definitions
-        : _relevantOperations;
+        : _relevantOperations) as DefinitionNode[]
 
-    const renameOperation = (targetOperation, name) => {
+    const renameOperation = (targetOperation: DefinitionNode, name: string): ASTNode => {
       const newName =
         name == null || name === ""
           ? null
@@ -147,13 +219,13 @@ export default class Explorer extends React.PureComponent<Props<any>, State> {
 
       return {
         ...parsedQuery,
-        definitions: newDefinitions,
+        definitions: newDefinitions as unknown as DefinitionNode[],
       };
     };
 
     const cloneOperation = (
       targetOperation: OperationDefinitionNode | FragmentDefinitionNode
-    ) => {
+    ): ASTNode => {
       let kind;
       if (targetOperation.kind === "FragmentDefinition") {
         kind = "fragment";
@@ -180,11 +252,11 @@ export default class Explorer extends React.PureComponent<Props<any>, State> {
 
       return {
         ...parsedQuery,
-        definitions: newDefinitions,
+        definitions: newDefinitions as unknown as DefinitionNode[],
       };
     };
 
-    const destroyOperation = (targetOperation) => {
+    const destroyOperation = (targetOperation: DefinitionNode) => {
       const existingDefs = parsedQuery.definitions;
 
       const newDefinitions = existingDefs.filter((existingOperation) => {
@@ -211,17 +283,16 @@ export default class Explorer extends React.PureComponent<Props<any>, State> {
       const MySiblingDefs = viewingDefaultOperation
         ? []
         : existingDefs.filter((def) => {
-            if (def.kind === "OperationDefinition") {
-              return def.operation === kind;
-            } else {
-              // Don't support adding fragments from explorer
-              return false;
-            }
-          });
+          if (def.kind === "OperationDefinition") {
+            return def.operation === kind;
+          } else {
+            // Don't support adding fragments from explorer
+            return false;
+          }
+        });
 
-      const newOperationName = `My${capitalize(kind)}${
-        MySiblingDefs.length === 0 ? "" : MySiblingDefs.length + 1
-      }`;
+      const newOperationName = `My${capitalize(kind)}${MySiblingDefs.length === 0 ? "" : MySiblingDefs.length + 1
+        }`;
 
       // Add this as the default field as it guarantees a valid selectionSet
       const firstFieldName = "__typename # Placeholder value";
@@ -262,9 +333,9 @@ export default class Explorer extends React.PureComponent<Props<any>, State> {
           ? [newDefinition]
           : [...parsedQuery.definitions, newDefinition];
 
-      const newOperationDef = {
+      const newOperationDef: ASTNode = {
         ...parsedQuery,
-        definitions: newDefinitions,
+        definitions: newDefinitions as unknown as DefinitionNode[],
       };
 
       this.setState({ operationToScrollTo: `${kind}-${newOperationName}` });
@@ -272,102 +343,26 @@ export default class Explorer extends React.PureComponent<Props<any>, State> {
       this.props.onEdit(print(newOperationDef));
     };
 
-    const actionsOptions = [
-      // !!queryFields ? (
-      //   <option
-      //     key="query"
-      //     className={"toolbar-button"}
-      //     style={styleConfig.styles.buttonStyle}
-      //     type="link"
-      //     value={("query": NewOperationType)}
-      //   >
-      //     Query
-      //   </option>
-      // ) : null,
-      // !!mutationFields ? (
-      //   <option
-      //     key="mutation"
-      //     className={"toolbar-button"}
-      //     style={styleConfig.styles.buttonStyle}
-      //     type="link"
-      //     value={("mutation": NewOperationType)}
-      //   >
-      //     Mutation
-      //   </option>
-      // ) : null,
-      // !!subscriptionFields ? (
-      //   <option
-      //     key="subscription"
-      //     className={"toolbar-button"}
-      //     style={styleConfig.styles.buttonStyle}
-      //     type="link"
-      //     value={("subscription": NewOperationType)}
-      //   >
-      //     Subscription
-      //   </option>
-      // ) : null,
-    ].filter(Boolean);
+    // 下方切换操作类型
+    const actionsOptions = generateActionOptions(
+      queryFields,
+      mutationFields,
+      subscriptionFields,
+      styleConfig
+    );
 
-    const actionsEl =
-      actionsOptions.length === 0 ? null : (
-        <div
-          style={{
-            minHeight: "50px",
-            maxHeight: "50px",
-            overflow: "none",
-          }}
-        >
-          <form
-            className="variable-editor-title graphiql-explorer-actions"
-            style={{
-              ...styleConfig.styles.explorerActionsStyle,
-              display: "flex",
-              flexDirection: "row",
-              alignItems: "center",
-              borderTop: "1px solid rgb(214, 214, 214)",
-            }}
-            onSubmit={(event) => event.preventDefault()}
-          >
-            <span
-              style={{
-                display: "inline-block",
-                flexGrow: "0",
-                textAlign: "right",
-              }}
-            >
-              Add new{" "}
-            </span>
-            <select
-              onChange={(event) =>
-                this._setAddOperationType(event.target.value)
-              }
-              value={this.state.newOperationType}
-              style={{ flexGrow: "2" }}
-            >
-              {actionsOptions}
-            </select>
-            <button
-              type="submit"
-              className="toolbar-button"
-              onClick={() =>
-                this.state.newOperationType
-                  ? addOperation(this.state.newOperationType)
-                  : null
-              }
-              style={{
-                ...styleConfig.styles.buttonStyle,
-                height: "22px",
-                width: "22px",
-              }}
-            >
-              <span>+</span>
-            </button>
-          </form>
-        </div>
-      );
+    const actionsEl = generateActionElements(
+      actionsOptions,
+      styleConfig,
+      this.state.newOperationType,
+      this._setAddOperationType,
+      addOperation
+    );
 
+    // 拿到所有已定义的片段
     const availableFragments: AvailableFragments = relevantOperations.reduce(
-      (acc, operation) => {
+
+      (acc: any, operation) => {
         if (operation.kind === "FragmentDefinition") {
           const fragmentTypeName = operation.typeCondition.name.value;
           const existingFragmentsForType = acc[fragmentTypeName] || [];
@@ -385,6 +380,8 @@ export default class Explorer extends React.PureComponent<Props<any>, State> {
       },
       {}
     );
+
+    console.log('availableFragments: ', availableFragments);
 
     const attribution = this.props.showAttribution ? <Attribution /> : null;
 
@@ -409,11 +406,11 @@ export default class Explorer extends React.PureComponent<Props<any>, State> {
       >
         <div
           style={{
-            flexGrow: "1",
+            flexGrow: 1,
             overflow: "scroll",
           }}
         >
-          {relevantOperations.map(
+          {(relevantOperations as any[]).map(
             (
               operation: OperationDefinitionNode | FragmentDefinitionNode,
               index
@@ -426,7 +423,7 @@ export default class Explorer extends React.PureComponent<Props<any>, State> {
                   ? "fragment"
                   : (operation && operation.operation) || "query";
 
-              const onOperationRename = (newName) => {
+              const onOperationRename = (newName: string) => {
                 const newOperationDef = renameOperation(operation, newName);
                 this.props.onEdit(print(newOperationDef));
               };
@@ -455,12 +452,12 @@ export default class Explorer extends React.PureComponent<Props<any>, State> {
                 operationType === "query"
                   ? queryFields
                   : operationType === "mutation"
-                  ? mutationFields
-                  : operationType === "subscription"
-                  ? subscriptionFields
-                  : operation.kind === "FragmentDefinition"
-                  ? fragmentFields
-                  : null;
+                    ? mutationFields
+                    : operationType === "subscription"
+                      ? subscriptionFields
+                      : operation.kind === "FragmentDefinition"
+                        ? fragmentFields
+                        : null;
 
               const fragmentTypeName =
                 operation.kind === "FragmentDefinition"
@@ -487,10 +484,12 @@ export default class Explorer extends React.PureComponent<Props<any>, State> {
                   onTypeName={fragmentTypeName}
                   onMount={this._handleRootViewMount}
                   onCommit={onCommit}
+                  // ?何时调用的
                   onEdit={(
                     newDefinition?: DefinitionNode,
                     options?: { commit: boolean }
                   ): DocumentNode => {
+                    console.log("onEdit")
                     let commit;
                     if (
                       typeof options === "object" &&
@@ -528,7 +527,7 @@ export default class Explorer extends React.PureComponent<Props<any>, State> {
                   makeDefaultArg={makeDefaultArg}
                   onRunOperation={() => {
                     if (!!this.props.onRunOperation) {
-                      this.props.onRunOperation(operationName);
+                      this.props.onRunOperation(operationName!);
                     }
                   }}
                   styleConfig={styleConfig}

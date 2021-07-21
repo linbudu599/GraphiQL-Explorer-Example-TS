@@ -155,7 +155,7 @@ export const defaultStyles = {
     paddingLeft: "8px",
     bottom: "0px",
     width: "100%",
-    textAlign: "center",
+    textAlign: "center" as "center",
     background: "none",
     borderTop: "none",
     borderBottom: "none",

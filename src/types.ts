@@ -64,10 +64,10 @@ export type Styles = {
 
 export type StyleConfig = {
   colors: Colors,
-  arrowOpen: React.ReactElement,
-  arrowClosed: React.ReactElement,
-  checkboxChecked: React.ReactElement,
-  checkboxUnchecked: React.ReactElement,
+  arrowOpen: JSX.Element,
+  arrowClosed: JSX.Element,
+  checkboxChecked: JSX.Element,
+  checkboxUnchecked: JSX.Element,
   styles: Styles,
 };
 
@@ -84,10 +84,10 @@ export type Props = {
   explorerIsOpen: boolean,
   onRunOperation?: (name: string) => void,
   colors?: Colors,
-  arrowOpen?: React.ReactElement,
-  arrowClosed?: React.ReactElement,
-  checkboxChecked?: React.ReactElement,
-  checkboxUnchecked?: React.ReactElement,
+  arrowOpen?: JSX.Element,
+  arrowClosed?: JSX.Element,
+  checkboxChecked?: JSX.Element,
+  checkboxUnchecked?: JSX.Element,
   styles?: {
     explorerActionsStyle?: StyleMap,
     buttonStyle?: StyleMap,
@@ -99,11 +99,37 @@ export type Props = {
 export type OperationType = "query" | "mutation" | "subscription" | "fragment";
 export type NewOperationType = "query" | "mutation" | "subscription";
 
-export type State = {
-  operation: OperationDefinitionNode,
-  newOperationType: NewOperationType,
-  operationToScrollTo: string,
+export type ExplorerState = {
+  operation: OperationDefinitionNode | null,
+  newOperationType: NewOperationType | null,
+  operationToScrollTo: string | null,
 };
+
+export type ExplorerProps = {
+  query: string,
+  width?: number,
+  title?: string,
+  schema?: GraphQLSchema,
+  onEdit: (txt: string) => void,
+  getDefaultFieldNames?: (type: GraphQLObjectType) => Array<string>,
+  getDefaultScalarArgValue?: GetDefaultScalarArgValue,
+  makeDefaultArg?: MakeDefaultArg,
+  onToggleExplorer: () => void,
+  explorerIsOpen: boolean,
+  onRunOperation?: (name: string) => void,
+  colors?: Colors,
+  arrowOpen?: JSX.Element,
+  arrowClosed?: JSX.Element,
+  checkboxChecked?: JSX.Element,
+  checkboxUnchecked?: JSX.Element,
+  styles?: {
+    explorerActionsStyle?: StyleMap,
+    buttonStyle?: StyleMap,
+    actionButtonStyle?: StyleMap,
+  },
+  showAttribution: boolean,
+
+}
 
 export type Selections = ReadOnlyArray<SelectionNode>;
 
@@ -155,7 +181,7 @@ export type ScalarInputProps = {
   arg: GraphQLArgument,
   argValue: ValueNode,
   setArgValue: (
-    event:React.SyntheticEvent<any> | VariableDefinitionNode,
+    event: React.SyntheticEvent<any> | VariableDefinitionNode,
     commit: boolean
   ) => DocumentNode | null;
   onRunOperation: () => void,
@@ -168,7 +194,7 @@ export type AbstractArgViewProps = {
   arg: GraphQLArgument,
   parentField: Field,
   setArgValue: (
-    event:React.SyntheticEvent<any> | VariableDefinitionNode,
+    event: React.SyntheticEvent<any> | VariableDefinitionNode,
     commit: boolean
   ) => DocumentNode | null,
   setArgFields: (
@@ -190,7 +216,7 @@ export type FragmentViewProps = {
   selections: Selections,
   modifySelections: (
     selections: Selections,
-    tmp?:{ commit: boolean }
+    tmp?: { commit: boolean }
   ) => DocumentNode | null,
   onCommit: (newDoc: DocumentNode) => void,
   schema: GraphQLSchema,
@@ -202,7 +228,7 @@ export type FieldViewProps = {
   selections: Selections,
   modifySelections: (
     selections: Selections,
-    tmp?:{ commit: boolean }
+    tmp?: { commit: boolean }
   ) => DocumentNode | null,
   schema: GraphQLSchema,
   getDefaultFieldNames: (type: GraphQLObjectType) => Array<string>,
@@ -218,14 +244,14 @@ export type FieldViewProps = {
 export type RootViewProps = {
   schema: GraphQLSchema,
   isLast: boolean,
-  fields: GraphQLFieldMap<any, any>,
+  fields: GraphQLFieldMap<any, any> | null | undefined,
   operationType: OperationType,
-  name: string,
-  onTypeName: string,
+  name?: string,
+  onTypeName?: string | null,
   definition: FragmentDefinitionNode | OperationDefinitionNode,
   onEdit: (
     operationDef: OperationDefinitionNode | FragmentDefinitionNode,
-    commit: boolean
+    options: { commit: boolean }
   ) => DocumentNode,
   onCommit: (document: DocumentNode) => void,
   onOperationRename: (query: string) => void,
@@ -245,7 +271,7 @@ export type AbstractViewProps = {
   selections: Selections,
   modifySelections: (
     selections: Selections,
-    tmp?:{commit: boolean},
+    tmp?: { commit: boolean },
   ) => DocumentNode | null,
   schema: GraphQLSchema,
   getDefaultFieldNames: (type: GraphQLObjectType) => Array<string>,

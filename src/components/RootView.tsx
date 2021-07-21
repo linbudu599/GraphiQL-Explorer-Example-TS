@@ -1,21 +1,39 @@
-// @ts-nocheck
+import React from "react";
 import {
   OperationDefinitionNode,
   FragmentDefinitionNode,
   DocumentNode,
 } from "graphql";
-import React from "react";
 import { capitalize } from "../constants";
 import { NewOperationType, RootViewProps, Selections } from "../types";
 import { isRunShortcut, canRunOperation } from "../utils";
 import FieldView from "./FieldView";
 
+interface RootViewState {
+  // 区分于旧的 OperationType， 去除了 fragment 作为操作类型
+  newOperationType: NewOperationType;
+  // 是否在操作类型title旁展示移除与复制操作
+  displayTitleActions: boolean;
+}
+
 export default class RootView extends React.PureComponent<
   RootViewProps,
-  { newOperationType: NewOperationType; displayTitleActions: boolean }
+  RootViewState
 > {
-  state: any = { newOperationType: "query", displayTitleActions: false };
+  state: RootViewState = {
+    newOperationType: "query",
+    displayTitleActions: true,
+  };
   _previousOperationDef?: OperationDefinitionNode | FragmentDefinitionNode;
+
+  componentDidMount() {
+    // 每个根类型都会生成一个专用id 形式为 query-MyQuery 这样
+    const rootViewElId = this._rootViewElId();
+    console.log('rootViewElId: ', rootViewElId);
+
+    // 继承自Explorer组件
+    this.props.onMount(rootViewElId);
+  }
 
   _modifySelections = (
     selections: Selections,
@@ -90,11 +108,7 @@ export default class RootView extends React.PureComponent<
     return rootViewElId;
   };
 
-  componentDidMount() {
-    const rootViewElId = this._rootViewElId();
 
-    this.props.onMount(rootViewElId);
-  }
 
   render() {
     const {
