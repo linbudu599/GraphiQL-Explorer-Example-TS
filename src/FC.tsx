@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import GraphiQL from "graphiql";
-import GraphiQLExplorer from "graphiql-explorer";
-// import GraphiQLExplorer from "./Explorer/components/Explorer";
+// import GraphiQLExplorer from "graphiql-explorer";
+import GraphiQLExplorer from "./Explorer/components/Explorer";
 import { buildClientSchema, getIntrospectionQuery, parse } from "graphql";
 import { makeDefaultArg, getDefaultScalarArgValue } from "./CustomArgs";
 import CodeMirror, { KeyMap } from "codemirror";
@@ -10,7 +10,7 @@ import "graphiql/graphiql.css";
 import "./App.css";
 
 import type { GraphQLSchema } from "graphql";
-import { DEFAULT_QUERY } from "./constants";
+import { DEFAULT_QUERY, DEFAULT_QUERY_LITE } from "./constants";
 import { fetcher, CodeMirrorMousePos } from "./utils";
 
 type AppState = {
@@ -27,7 +27,8 @@ const GraphiQLExampleApp: React.FC = () => {
 
   const [appState, setAppState] = useState<AppState>({
     schema: undefined,
-    query: DEFAULT_QUERY,
+    // query: DEFAULT_QUERY,
+    query: DEFAULT_QUERY_LITE,
     explorerIsOpen: true,
   });
 

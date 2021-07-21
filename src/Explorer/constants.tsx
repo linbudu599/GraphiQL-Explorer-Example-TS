@@ -7,7 +7,9 @@ export function capitalize(str: string) {
 }
 
 // Names match class names in graphiql app.css
-// https://github.com/graphql/graphiql/blob/master/packages/graphiql/css/app.css
+// https://github.com/graphql/graphiql/blob/main/packages/graphiql/src/css/app.css
+// map relation: keyword -> cm-keyword
+// cm: codemirror
 export const defaultColors: Colors = {
   keyword: "#B11A04",
   // OperationName, FragmentName

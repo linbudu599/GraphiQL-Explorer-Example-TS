@@ -1,4 +1,4 @@
-import { FETCH_URL } from "./constants";
+import { FETCH_URL, FETCH_URL_LITE, FETCH_HEADERS } from "./constants";
 
 export type ObjectRecord = {
   [key: string]: unknown
@@ -12,13 +12,10 @@ export type CodeMirrorMousePos = {
 
 export async function fetcher(params: ObjectRecord): Promise<{ data: any }> {
   const response = await fetch(
-    FETCH_URL,
+    FETCH_URL_LITE,
     {
       method: "POST",
-      headers: {
-        Accept: "application/json",
-        "Content-Type": "application/json"
-      },
+      headers: FETCH_HEADERS,
       body: JSON.stringify(params)
     }
   );
