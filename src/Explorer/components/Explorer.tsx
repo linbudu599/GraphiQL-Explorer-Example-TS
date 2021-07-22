@@ -7,6 +7,7 @@ import {
   print,
   GraphQLObjectType,
   ASTNode,
+  OperationTypeNode,
 } from "graphql";
 import {
   defaultColors,
@@ -32,8 +33,11 @@ import {
 } from "../utils";
 import RootView from "./RootView";
 import {
+  checkCommit,
+  EXPLORER_ROOT_STYLES,
   generateActionElements,
   generateActionOptions,
+  getAvailableFragments,
 } from "./refactor/Explorer";
 
 export default class Explorer extends React.PureComponent<
@@ -64,7 +68,10 @@ export default class Explorer extends React.PureComponent<
     this._resetScroll();
   }
 
-  _onEdit = (query: string): void => this.props.onEdit(query);
+  _onEdit = (query: string): void => {
+    console.log("_onEdit: ");
+    this.props.onEdit(query);
+  };
 
   _setAddOperationType = (value: NewOperationType) => {
     this.setState({ newOperationType: value });
@@ -109,9 +116,9 @@ export default class Explorer extends React.PureComponent<
       arrowOpen: this.props.arrowOpen || defaultArrowOpen,
       styles: this.props.styles
         ? {
-          ...defaultStyles,
-          ...this.props.styles,
-        }
+            ...defaultStyles,
+            ...this.props.styles,
+          }
         : defaultStyles,
     };
 
@@ -196,11 +203,16 @@ export default class Explorer extends React.PureComponent<
     const relevantOperations =
       // If we don't have any relevant definitions from the parsed document,
       // then at least show an expanded Query selection
-      (_relevantOperations.length === 0
-        ? DEFAULT_DOCUMENT.definitions
-        : _relevantOperations) as DefinitionNode[]
+      (
+        _relevantOperations.length === 0
+          ? DEFAULT_DOCUMENT.definitions
+          : _relevantOperations
+      ) as DefinitionNode[];
 
-    const renameOperation = (targetOperation: DefinitionNode, name: string): ASTNode => {
+    const renameOperation = (
+      targetOperation: DefinitionNode,
+      name: string
+    ): ASTNode => {
       const newName =
         name == null || name === ""
           ? null
@@ -274,6 +286,7 @@ export default class Explorer extends React.PureComponent<
     };
 
     const addOperation = (kind: NewOperationType) => {
+      console.log("kind: ", kind);
       const existingDefs = parsedQuery.definitions;
 
       const viewingDefaultOperation =
@@ -283,16 +296,17 @@ export default class Explorer extends React.PureComponent<
       const MySiblingDefs = viewingDefaultOperation
         ? []
         : existingDefs.filter((def) => {
-          if (def.kind === "OperationDefinition") {
-            return def.operation === kind;
-          } else {
-            // Don't support adding fragments from explorer
-            return false;
-          }
-        });
+            if (def.kind === "OperationDefinition") {
+              return def.operation === kind;
+            } else {
+              // Don't support adding fragments from explorer
+              return false;
+            }
+          });
 
-      const newOperationName = `My${capitalize(kind)}${MySiblingDefs.length === 0 ? "" : MySiblingDefs.length + 1
-        }`;
+      const newOperationName = `My${capitalize(kind)}${
+        MySiblingDefs.length === 0 ? "" : MySiblingDefs.length + 1
+      }`;
 
       // Add this as the default field as it guarantees a valid selectionSet
       const firstFieldName = "__typename # Placeholder value";
@@ -360,29 +374,9 @@ export default class Explorer extends React.PureComponent<
     );
 
     // 拿到所有已定义的片段
-    const availableFragments: AvailableFragments = relevantOperations.reduce(
+    const availableFragments = getAvailableFragments(relevantOperations);
 
-      (acc: any, operation) => {
-        if (operation.kind === "FragmentDefinition") {
-          const fragmentTypeName = operation.typeCondition.name.value;
-          const existingFragmentsForType = acc[fragmentTypeName] || [];
-          const newFragmentsForType = [
-            ...existingFragmentsForType,
-            operation,
-          ].sort((a, b) => a.name.value.localeCompare(b.name.value));
-          return {
-            ...acc,
-            [fragmentTypeName]: newFragmentsForType,
-          };
-        }
-
-        return acc;
-      },
-      {}
-    );
-
-    console.log('availableFragments: ', availableFragments);
-
+    // Display: GraphiQL Explorer by OneGraph Contribute on GitHub
     const attribution = this.props.showAttribution ? <Attribution /> : null;
 
     return (
@@ -390,18 +384,7 @@ export default class Explorer extends React.PureComponent<
         ref={(ref) => {
           this._ref = ref;
         }}
-        style={{
-          fontSize: 12,
-          textOverflow: "ellipsis",
-          whiteSpace: "nowrap",
-          margin: 0,
-          padding: 8,
-          fontFamily:
-            'Consolas, Inconsolata, "Droid Sans Mono", Monaco, monospace',
-          display: "flex",
-          flexDirection: "column",
-          height: "100%",
-        }}
+        style={EXPLORER_ROOT_STYLES}
         className="graphiql-explorer-root"
       >
         <div
@@ -410,6 +393,7 @@ export default class Explorer extends React.PureComponent<
             overflow: "scroll",
           }}
         >
+          {/* 使用相关操作渲染RootView */}
           {(relevantOperations as any[]).map(
             (
               operation: OperationDefinitionNode | FragmentDefinitionNode,
@@ -418,22 +402,25 @@ export default class Explorer extends React.PureComponent<
               const operationName =
                 operation && operation.name && operation.name.value;
 
-              const operationType =
+              const operationType: OperationTypeNode | "fragment" =
                 operation.kind === "FragmentDefinition"
                   ? "fragment"
                   : (operation && operation.operation) || "query";
 
               const onOperationRename = (newName: string) => {
+                console.log("onOperationRename: ");
                 const newOperationDef = renameOperation(operation, newName);
                 this.props.onEdit(print(newOperationDef));
               };
 
               const onOperationClone = () => {
+                console.log("onOperationClone: ");
                 const newOperationDef = cloneOperation(operation);
                 this.props.onEdit(print(newOperationDef));
               };
 
               const onOperationDestroy = () => {
+                console.log("onOperationDestroy: ");
                 const newOperationDef = destroyOperation(operation);
                 this.props.onEdit(print(newOperationDef));
               };
@@ -452,12 +439,12 @@ export default class Explorer extends React.PureComponent<
                 operationType === "query"
                   ? queryFields
                   : operationType === "mutation"
-                    ? mutationFields
-                    : operationType === "subscription"
-                      ? subscriptionFields
-                      : operation.kind === "FragmentDefinition"
-                        ? fragmentFields
-                        : null;
+                  ? mutationFields
+                  : operationType === "subscription"
+                  ? subscriptionFields
+                  : operation.kind === "FragmentDefinition"
+                  ? fragmentFields
+                  : null;
 
               const fragmentTypeName =
                 operation.kind === "FragmentDefinition"
@@ -465,6 +452,7 @@ export default class Explorer extends React.PureComponent<
                   : null;
 
               const onCommit = (parsedDocument: DocumentNode) => {
+                console.log("onCommit: ");
                 const textualNewDocument = print(parsedDocument);
 
                 this.props.onEdit(textualNewDocument);
@@ -483,23 +471,18 @@ export default class Explorer extends React.PureComponent<
                   onOperationClone={onOperationClone}
                   onTypeName={fragmentTypeName}
                   onMount={this._handleRootViewMount}
+                  // commit是什么操作？
                   onCommit={onCommit}
-                  // ?何时调用的
+                  // 点击修改explorer字段时触发
                   onEdit={(
                     newDefinition?: DefinitionNode,
                     options?: { commit: boolean }
                   ): DocumentNode => {
-                    console.log("onEdit")
-                    let commit;
-                    if (
-                      typeof options === "object" &&
-                      typeof options.commit !== "undefined"
-                    ) {
-                      commit = options.commit;
-                    } else {
-                      commit = true;
-                    }
+                    console.log("newDefinition: ", newDefinition);
+                    console.log("onEdit");
+                    const commit = checkCommit(options);
 
+                    // 是否产生了新的字段定义
                     if (!!newDefinition) {
                       const newQuery: DocumentNode = {
                         ...parsedQuery,
@@ -511,12 +494,15 @@ export default class Explorer extends React.PureComponent<
                         ),
                       };
 
-                      if (commit) {
-                        onCommit(newQuery);
-                        return newQuery;
-                      } else {
-                        return newQuery;
-                      }
+                      commit ? onCommit(newQuery) : void 0;
+                      return newQuery;
+
+                      // if (commit) {
+                      //   onCommit(newQuery);
+                      //   return newQuery;
+                      // } else {
+                      //   return newQuery;
+                      // }
                     } else {
                       return parsedQuery;
                     }

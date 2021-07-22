@@ -12,10 +12,11 @@ export type CodeMirrorMousePos = {
 
 export async function fetcher(params: ObjectRecord): Promise<{ data: any }> {
   const response = await fetch(
-    FETCH_URL_LITE,
+    // FETCH_URL_LITE,
+    FETCH_URL,
     {
       method: "POST",
-      headers: FETCH_HEADERS,
+      // headers: FETCH_HEADERS,
       body: JSON.stringify(params)
     }
   );

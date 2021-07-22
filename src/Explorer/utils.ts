@@ -29,22 +29,22 @@ export function defaultValue(
   }
 }
 
-export function isRunShortcut(event:KeyboardEvent) {
+export function isRunShortcut(event: KeyboardEvent) {
   return event.ctrlKey && event.key === "Enter";
 }
 
-export function canRunOperation(operationName:string) {
+export function canRunOperation(operationName: string) {
   // it does not make sense to try to execute a fragment
   return operationName !== "FragmentDefinition";
 }
 
- export function defaultInputObjectFields(
+export function defaultInputObjectFields(
   getDefaultScalarArgValue: GetDefaultScalarArgValue,
   makeDefaultArg: MakeDefaultArg,
   parentField: Field,
   fields: Array<GraphQLInputField>
 ): Array<ObjectFieldNode> {
-  const nodes:ObjectFieldNode[] = [];
+  const nodes: ObjectFieldNode[] = [];
   for (const field of fields) {
     if (
       isRequiredInputField(field) ||
@@ -83,7 +83,7 @@ export function defaultArgs(
   makeDefaultArg: MakeDefaultArg,
   field: Field
 ): Array<ArgumentNode> {
-  const args:ArgumentNode[] = [];
+  const args: ArgumentNode[] = [];
   for (const arg of field.args) {
     if (
       isRequiredArgument(arg) ||
@@ -117,7 +117,7 @@ export function defaultArgs(
   return args;
 }
 
-export function parseQuery(text: string): DocumentNode | Error|null {
+export function parseQuery(text: string): DocumentNode | Error | null {
   try {
     if (!text.trim()) {
       return null;
@@ -133,7 +133,8 @@ export function parseQuery(text: string): DocumentNode | Error|null {
   }
 }
 
-let parseQueryMemoize: [string, DocumentNode] |null= null;
+let parseQueryMemoize: [string, DocumentNode] | null = null;
+
 export function memoizeParseQuery(query: string): DocumentNode {
   if (parseQueryMemoize && parseQueryMemoize[0] === query) {
     return parseQueryMemoize[1];
@@ -192,7 +193,7 @@ export function defaultGetDefaultFieldNames(type: GraphQLObjectType): Array<stri
   }
 
   // Include all leaf-type fields.
-  const leafFieldNames:string[] = [];
+  const leafFieldNames: string[] = [];
   Object.keys(fields).forEach((fieldName) => {
     if (isLeafType(fields[fieldName].type)) {
       leafFieldNames.push(fieldName);
@@ -206,7 +207,7 @@ export function defaultGetDefaultFieldNames(type: GraphQLObjectType): Array<stri
   return leafFieldNames.slice(0, 2); // Prevent too many fields from being added
 }
 
-export function isRequiredArgument(arg: GraphQLArgument): boolean  {
+export function isRequiredArgument(arg: GraphQLArgument): boolean {
   return isNonNullType(arg.type) && arg.defaultValue === undefined;
 }
 
@@ -241,7 +242,7 @@ export function coerceArgValue(
             kind: "StringValue",
             value: String(argType.parseValue(value)),
           };
-          // GQL中，数字也使用字符串表示
+        // GQL中，数字也使用字符串表示
         case "Float":
           return {
             kind: "FloatValue",

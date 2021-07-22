@@ -127,8 +127,7 @@ export type ExplorerProps = {
     buttonStyle?: StyleMap,
     actionButtonStyle?: StyleMap,
   },
-  showAttribution: boolean,
-
+  showAttribution?: boolean,
 }
 
 export type Selections = ReadOnlyArray<SelectionNode>;

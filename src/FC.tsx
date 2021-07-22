@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
 import GraphiQL from "graphiql";
 // import GraphiQLExplorer from "graphiql-explorer";
+// This repo is under refactoring, so I'm using local Explorer component.
+// Just replace import to "graphiql-explorer" for origin lib.
 import GraphiQLExplorer from "./Explorer/components/Explorer";
 import { buildClientSchema, getIntrospectionQuery, parse } from "graphql";
 import { makeDefaultArg, getDefaultScalarArgValue } from "./CustomArgs";
@@ -27,8 +29,8 @@ const GraphiQLExampleApp: React.FC = () => {
 
   const [appState, setAppState] = useState<AppState>({
     schema: undefined,
-    // query: DEFAULT_QUERY,
-    query: DEFAULT_QUERY_LITE,
+    query: DEFAULT_QUERY,
+    // query: DEFAULT_QUERY_LITE,
     explorerIsOpen: true,
   });
 
@@ -53,6 +55,8 @@ const GraphiQLExampleApp: React.FC = () => {
         //     handleInspectOperation as unknown as KeyMap[string],
         // });
 
+        // 构建客户端可用的GraphQLSchema
+        // (NodeJS不会被使用?)
         setAppState({ ...appState, schema: buildClientSchema(result.data) });
       })
       .catch((err) => {
@@ -103,15 +107,15 @@ const GraphiQLExampleApp: React.FC = () => {
       def.kind === "OperationDefinition"
         ? def.operation
         : def.kind === "FragmentDefinition"
-          ? "fragment"
-          : "unknown";
+        ? "fragment"
+        : "unknown";
 
     const operationName =
       def.kind === "OperationDefinition" && !!def.name
         ? def.name.value
         : def.kind === "FragmentDefinition" && !!def.name
-          ? def.name.value
-          : "unknown";
+        ? def.name.value
+        : "unknown";
 
     const selector = `.graphiql-explorer-root #${operationKind}-${operationName}`;
 
@@ -119,7 +123,9 @@ const GraphiQLExampleApp: React.FC = () => {
     el && el.scrollIntoView();
   };
 
+  // 在编辑query时触发，会拿到所有当前的query
   const handleEditQuery = (query?: string): void => {
+    console.log("handleEditQuery: ");
     patchAppState({ query: query ?? "" });
   };
 
@@ -131,9 +137,8 @@ const GraphiQLExampleApp: React.FC = () => {
     <>
       <div className="graphiql-container">
         {/* TODO: provide type definitions */}
-        {/* @ts-ignore */}
         <GraphiQLExplorer
-          // @ts-ignore
+          // 构建完毕的GraphQL Schema
           schema={schema}
           query={query}
           onEdit={handleEditQuery}
@@ -146,6 +151,7 @@ const GraphiQLExampleApp: React.FC = () => {
           onToggleExplorer={handleToggleExplorer}
           getDefaultScalarArgValue={getDefaultScalarArgValue}
           makeDefaultArg={makeDefaultArg}
+          showAttribution={true}
         />
         <GraphiQL
           ref={(ref) => (graphiqlIns = ref!)}
