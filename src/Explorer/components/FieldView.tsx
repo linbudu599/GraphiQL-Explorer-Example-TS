@@ -1,4 +1,3 @@
-// @ts-nocheck
 import {
   SelectionNode,
   FieldNode,
@@ -10,6 +9,7 @@ import {
   isInterfaceType,
   isUnionType,
   FragmentDefinitionNode,
+  GraphQLFieldMap,
 } from "graphql";
 import React from "react";
 import { FieldViewProps, Selections } from "../types";
@@ -17,6 +17,7 @@ import { defaultArgs, unwrapOutputType, Checkbox } from "../utils";
 import AbstractView from "./AbstractView";
 import ArgView from "./ArgView";
 import FragmentView from "./FragmentView";
+import { Arrow, CheckBoxComp, NODE_STYLES } from "./refactor/FieldView";
 
 export default class FieldView extends React.PureComponent<
   FieldViewProps,
@@ -25,7 +26,10 @@ export default class FieldView extends React.PureComponent<
   state = { displayFieldActions: false };
 
   _previousSelection?: SelectionNode;
-  _addAllFieldsToSelections = (rawSubfields) => {
+
+  _addAllFieldsToSelections = (
+    rawSubfields: GraphQLFieldMap<any, any> | false
+  ) => {
     const subFields: Array<FieldNode> = !!rawSubfields
       ? Object.keys(rawSubfields).map((fieldName) => {
           return {
@@ -41,7 +45,7 @@ export default class FieldView extends React.PureComponent<
       selections: subFields,
     };
 
-    const nextSelections = [
+    const nextSelections: SelectionNode[] = [
       ...this.props.selections.filter((selection) => {
         if (selection.kind === "InlineFragment") {
           return true;
@@ -65,7 +69,7 @@ export default class FieldView extends React.PureComponent<
     this.props.modifySelections(nextSelections);
   };
 
-  _addFieldToSelections = (rawSubfields) => {
+  _addFieldToSelections = (rawSubfields: GraphQLFieldMap<any, any> | false) => {
     const nextSelections = [
       ...this.props.selections,
       this._previousSelection || {
@@ -82,7 +86,7 @@ export default class FieldView extends React.PureComponent<
     this.props.modifySelections(nextSelections);
   };
 
-  _handleUpdateSelections = (event) => {
+  _handleUpdateSelections = (event: React.MouseEvent<HTMLSpanElement>) => {
     const selection = this._getSelection();
     if (selection && !event.altKey) {
       this._removeFieldFromSelections();
@@ -100,14 +104,15 @@ export default class FieldView extends React.PureComponent<
 
   _removeFieldFromSelections = () => {
     const previousSelection = this._getSelection();
-    this._previousSelection = previousSelection;
+    this._previousSelection = previousSelection!;
     this.props.modifySelections(
       this.props.selections.filter(
         (selection) => selection !== previousSelection
       )
     );
   };
-  _getSelection = (): FieldNode => {
+
+  _getSelection = (): FieldNode | null | undefined | void => {
     const selection = this.props.selections.find(
       (selection) =>
         selection.kind === "Field" &&
@@ -124,7 +129,7 @@ export default class FieldView extends React.PureComponent<
   _setArguments = (
     argumentNodes: Array<ArgumentNode>,
     options?: { commit: boolean }
-  ): DocumentNode | null => {
+  ): DocumentNode | null | undefined | void => {
     const selection = this._getSelection();
     if (!selection) {
       console.error("Missing selection when setting arguments", argumentNodes);
@@ -148,11 +153,11 @@ export default class FieldView extends React.PureComponent<
   };
 
   _modifyChildSelections = (
-    selections: Selections,
-    options: { commit: boolean }
-  ): DocumentNode | null => {
+    selections: SelectionNode[],
+    options?: { commit: boolean }
+  ): DocumentNode | null | undefined | void => {
     return this.props.modifySelections(
-      this.props.selections.map((selection) => {
+      this.props.selections.map((selection: SelectionNode) => {
         if (
           selection.kind === "Field" &&
           this.props.field.name === selection.name.value
@@ -170,7 +175,7 @@ export default class FieldView extends React.PureComponent<
               kind: "SelectionSet",
               selections,
             },
-          };
+          } as unknown as SelectionNode;
         }
         return selection;
       }),
@@ -198,15 +203,8 @@ export default class FieldView extends React.PureComponent<
     const node = (
       <div className={className}>
         <span
-          title={field.description}
-          style={{
-            cursor: "pointer",
-            display: "inline-flex",
-            alignItems: "center",
-            minHeight: "16px",
-            WebkitUserSelect: "none",
-            userSelect: "none",
-          }}
+          title={field.description || ""}
+          style={NODE_STYLES}
           data-field-name={field.name}
           data-field-type={type.name}
           onClick={this._handleUpdateSelections}
@@ -225,19 +223,16 @@ export default class FieldView extends React.PureComponent<
           }}
           onMouseLeave={() => this.setState({ displayFieldActions: false })}
         >
-          {isObjectType(type) ? (
-            <span>
-              {!!selection
-                ? this.props.styleConfig.arrowOpen
-                : this.props.styleConfig.arrowClosed}
-            </span>
-          ) : null}
-          {isObjectType(type) ? null : (
-            <Checkbox
-              checked={!!selection}
-              styleConfig={this.props.styleConfig}
-            />
-          )}
+          <Arrow
+            type={type}
+            styleConfig={this.props.styleConfig}
+            selection={selection}
+          />
+          <CheckBoxComp
+            type={type}
+            styleConfig={this.props.styleConfig}
+            selection={selection}
+          />
           <span
             style={{ color: styleConfig.colors.property }}
             className="graphiql-explorer-field-view"
@@ -259,11 +254,11 @@ export default class FieldView extends React.PureComponent<
                 const typeName = type.name;
                 let newFragmentName = `${typeName}Fragment`;
 
-                const conflictingNameCount = (applicableFragments || []).filter(
-                  (fragment: FragmentDefinitionNode) => {
-                    return fragment.name.value.startsWith(newFragmentName);
-                  }
-                ).length;
+                const conflictingNameCount = (
+                  (applicableFragments || []) as FragmentDefinitionNode[]
+                ).filter((fragment) => {
+                  return fragment.name.value.startsWith(newFragmentName);
+                }).length;
 
                 if (conflictingNameCount > 0) {
                   newFragmentName = `${newFragmentName}${conflictingNameCount}`;
@@ -307,8 +302,8 @@ export default class FieldView extends React.PureComponent<
                 };
 
                 const newDoc = this._modifyChildSelections(
-                  nextSelections,
-                  false
+                  nextSelections as unknown as Selections[],
+                  { commit: false }
                 );
 
                 if (newDoc) {
@@ -360,17 +355,21 @@ export default class FieldView extends React.PureComponent<
       (isObjectType(type) || isInterfaceType(type) || isUnionType(type))
     ) {
       const fields = isUnionType(type) ? {} : type.getFields();
-      const childSelections = selection
-        ? selection.selectionSet
-          ? selection.selectionSet.selections
+      const childSelections = (
+        selection
+          ? selection.selectionSet
+            ? selection.selectionSet.selections
+            : []
           : []
-        : [];
+      ) as SelectionNode[];
       return (
         <div className={`graphiql-explorer-${field.name}`}>
           {node}
           <div style={{ marginLeft: 16 }}>
             {!!applicableFragments
-              ? applicableFragments.map((fragment) => {
+              ? (
+                  applicableFragments as unknown as FragmentDefinitionNode[]
+                ).map((fragment) => {
                   const type = schema.getType(
                     fragment.typeCondition.name.value
                   );

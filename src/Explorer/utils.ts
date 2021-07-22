@@ -82,7 +82,7 @@ export function defaultInputObjectFields(
 
 export function defaultArgs(
   getDefaultScalarArgValue: GetDefaultScalarArgValue,
-  makeDefaultArg: MakeDefaultArg,
+  makeDefaultArg: MakeDefaultArg | undefined,
   field: Field
 ): Array<ArgumentNode> {
   const args: ArgumentNode[] = [];

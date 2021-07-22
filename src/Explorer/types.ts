@@ -157,12 +157,12 @@ export type ArgViewProps = {
   parentField: Field,
   arg: GraphQLArgument,
   selection: FieldNode,
-  modifyArguments: (
-    argumentNodes: ReadOnlyArray<ArgumentNode>,
-    commit: boolean
-  ) => DocumentNode | null,
+  modifyArguments?: (
+    argumentNodes: Array<ArgumentNode>,
+    options?: { commit: boolean }
+  ) => DocumentNode | null | undefined | void,
   getDefaultScalarArgValue: GetDefaultScalarArgValue,
-  makeDefaultArg: MakeDefaultArg,
+  makeDefaultArg?: MakeDefaultArg,
   onRunOperation: () => void,
   styleConfig: StyleConfig,
   onCommit: (newDoc: DocumentNode) => void,
@@ -212,11 +212,11 @@ export type AbstractArgViewProps = {
 
 export type FragmentViewProps = {
   fragment: FragmentDefinitionNode,
-  selections: Selections,
+  selections: SelectionNode[],
   modifySelections: (
-    selections: Selections,
-    tmp?: { commit: boolean }
-  ) => DocumentNode | null,
+    selections: SelectionNode[],
+    options?: { commit: boolean }
+  ) => DocumentNode | null | undefined | void,
   onCommit: (newDoc: DocumentNode) => void,
   schema: GraphQLSchema,
   styleConfig: StyleConfig,
@@ -227,8 +227,8 @@ export type FieldViewProps = {
   selections: readonly SelectionNode[],
   modifySelections: (
     selections: SelectionNode[],
-    tmp?: { commit: boolean }
-  ) => void,
+    options?: { commit: boolean }
+  ) => DocumentNode | null | undefined | void,
   schema: GraphQLSchema,
   getDefaultFieldNames: (type: GraphQLObjectType) => Array<string>,
   getDefaultScalarArgValue: GetDefaultScalarArgValue,
@@ -267,11 +267,11 @@ export type RootViewProps = {
 
 export type AbstractViewProps = {
   implementingType: GraphQLObjectType,
-  selections: Selections,
+  selections: SelectionNode[],
   modifySelections: (
-    selections: Selections,
+    selections: SelectionNode[],
     tmp?: { commit: boolean },
-  ) => DocumentNode | null,
+  ) => DocumentNode | null | undefined | void,
   schema: GraphQLSchema,
   getDefaultFieldNames: (type: GraphQLObjectType) => Array<string>,
   getDefaultScalarArgValue: GetDefaultScalarArgValue,
