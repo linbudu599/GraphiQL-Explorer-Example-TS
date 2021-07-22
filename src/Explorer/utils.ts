@@ -29,10 +29,12 @@ export function defaultValue(
   }
 }
 
-export function isRunShortcut(event: KeyboardEvent) {
+// ctrl + enter，快速执行
+export function isRunShortcut(event: React.KeyboardEvent<HTMLInputElement>) {
   return event.ctrlKey && event.key === "Enter";
 }
 
+// 除片段以外，均是可执行的
 export function canRunOperation(operationName: string) {
   // it does not make sense to try to execute a fragment
   return operationName !== "FragmentDefinition";

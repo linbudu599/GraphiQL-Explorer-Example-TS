@@ -224,15 +224,15 @@ export type FragmentViewProps = {
 
 export type FieldViewProps = {
   field: Field,
-  selections: Selections,
+  selections: readonly SelectionNode[],
   modifySelections: (
-    selections: Selections,
+    selections: SelectionNode[],
     tmp?: { commit: boolean }
-  ) => DocumentNode | null,
+  ) => void,
   schema: GraphQLSchema,
   getDefaultFieldNames: (type: GraphQLObjectType) => Array<string>,
   getDefaultScalarArgValue: GetDefaultScalarArgValue,
-  makeDefaultArg: MakeDefaultArg,
+  makeDefaultArg?: MakeDefaultArg,
   onRunOperation: () => void,
   styleConfig: StyleConfig,
   onCommit: (newDoc: DocumentNode) => void,
@@ -250,7 +250,7 @@ export type RootViewProps = {
   definition: FragmentDefinitionNode | OperationDefinitionNode,
   onEdit: (
     operationDef: OperationDefinitionNode | FragmentDefinitionNode,
-    options: { commit: boolean }
+    options?: { commit: boolean }
   ) => DocumentNode,
   onCommit: (document: DocumentNode) => void,
   onOperationRename: (query: string) => void,

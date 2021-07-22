@@ -82,9 +82,9 @@ export default class Explorer extends React.PureComponent<
       !!this.state.operationToScrollTo &&
       this.state.operationToScrollTo === rootViewElId
     ) {
-      var selector = `.graphiql-explorer-root #${rootViewElId}`;
+      const selector = `.graphiql-explorer-root #${rootViewElId}`;
+      const el = document.querySelector(selector);
 
-      var el = document.querySelector(selector);
       el && el.scrollIntoView();
     }
   };
@@ -222,11 +222,15 @@ export default class Explorer extends React.PureComponent<
       const existingDefs = parsedQuery.definitions;
 
       const newDefinitions = existingDefs.map((existingOperation) => {
-        if (targetOperation === existingOperation) {
-          return newOperation;
-        } else {
-          return existingOperation;
-        }
+        // if (targetOperation === existingOperation) {
+        //   return newOperation;
+        // } else {
+        //   return existingOperation;
+        // }
+
+        return targetOperation === existingOperation
+          ? newOperation
+          : existingOperation;
       });
 
       return {
@@ -238,12 +242,17 @@ export default class Explorer extends React.PureComponent<
     const cloneOperation = (
       targetOperation: OperationDefinitionNode | FragmentDefinitionNode
     ): ASTNode => {
-      let kind;
-      if (targetOperation.kind === "FragmentDefinition") {
-        kind = "fragment";
-      } else {
-        kind = targetOperation.operation;
-      }
+      const kind =
+        targetOperation.kind === "FragmentDefinition"
+          ? "fragment"
+          : targetOperation.operation;
+
+      // let kind;
+      // if (targetOperation.kind === "FragmentDefinition") {
+      //   kind = "fragment";
+      // } else {
+      //   kind = targetOperation.operation;
+      // }
 
       const newOperationName =
         ((targetOperation.name && targetOperation.name.value) || "") + "Copy";
@@ -254,17 +263,20 @@ export default class Explorer extends React.PureComponent<
         loc: undefined,
       };
 
-      const newOperation = { ...targetOperation, name: newName };
+      const newOperation = {
+        ...targetOperation,
+        name: newName,
+      } as DefinitionNode;
 
       const existingDefs = parsedQuery.definitions;
 
-      const newDefinitions = [...existingDefs, newOperation];
+      const newDefinitions: DefinitionNode[] = [...existingDefs, newOperation];
 
       this.setState({ operationToScrollTo: `${kind}-${newOperationName}` });
 
       return {
         ...parsedQuery,
-        definitions: newDefinitions as unknown as DefinitionNode[],
+        definitions: newDefinitions,
       };
     };
 
@@ -272,11 +284,13 @@ export default class Explorer extends React.PureComponent<
       const existingDefs = parsedQuery.definitions;
 
       const newDefinitions = existingDefs.filter((existingOperation) => {
-        if (targetOperation === existingOperation) {
-          return false;
-        } else {
-          return true;
-        }
+        // if (targetOperation === existingOperation) {
+        //   return false;
+        // } else {
+        //   return true;
+        // }
+
+        return targetOperation !== existingOperation;
       });
 
       return {
@@ -408,7 +422,6 @@ export default class Explorer extends React.PureComponent<
                   : (operation && operation.operation) || "query";
 
               const onOperationRename = (newName: string) => {
-                console.log("onOperationRename: ");
                 const newOperationDef = renameOperation(operation, newName);
                 this.props.onEdit(print(newOperationDef));
               };
@@ -478,7 +491,6 @@ export default class Explorer extends React.PureComponent<
                     newDefinition?: DefinitionNode,
                     options?: { commit: boolean }
                   ): DocumentNode => {
-                    console.log("newDefinition: ", newDefinition);
                     console.log("onEdit");
                     const commit = checkCommit(options);
 
