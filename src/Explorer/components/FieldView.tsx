@@ -13,11 +13,16 @@ import {
 } from "graphql";
 import React from "react";
 import { FieldViewProps, Selections } from "../types";
-import { defaultArgs, unwrapOutputType, Checkbox } from "../utils";
+import { defaultArgs, unwrapOutputType } from "../utils";
 import AbstractView from "./AbstractView";
 import ArgView from "./ArgView";
 import FragmentView from "./FragmentView";
-import { Arrow, CheckBoxComp, NODE_STYLES } from "./refactor/FieldView";
+import {
+  Arrow,
+  CheckBoxComp,
+  NODE_STYLES,
+  getApplicableFragments,
+} from "./refactor/FieldView";
 
 export default class FieldView extends React.PureComponent<
   FieldViewProps,
@@ -112,18 +117,25 @@ export default class FieldView extends React.PureComponent<
     );
   };
 
-  _getSelection = (): FieldNode | null | undefined | void => {
-    const selection = this.props.selections.find(
-      (selection) =>
+  _getSelection = (): FieldNode | null => {
+    // console.log(this.props.field);
+    // SelectionNode  包含 FieldNode | FragmentSpreadNode | InlineFragmentNode;
+    // 这里需要的是拿到FieldNode，
+    // selection：当前被选择的字段 在这里拿到与 this.props.field.name 对应的
+    const selection = this.props.selections.find((selection) => {
+      return (
         selection.kind === "Field" &&
         this.props.field.name === selection.name.value
-    );
+      );
+    });
     if (!selection) {
       return null;
     }
     if (selection.kind === "Field") {
       return selection;
     }
+
+    return null;
   };
 
   _setArguments = (
@@ -133,7 +145,7 @@ export default class FieldView extends React.PureComponent<
     const selection = this._getSelection();
     if (!selection) {
       console.error("Missing selection when setting arguments", argumentNodes);
-      return;
+      return null;
     }
     return this.props.modifySelections(
       this.props.selections.map((s) =>
@@ -155,9 +167,10 @@ export default class FieldView extends React.PureComponent<
   _modifyChildSelections = (
     selections: SelectionNode[],
     options?: { commit: boolean }
-  ): DocumentNode | null | undefined | void => {
+  ): DocumentNode | null => {
+    // 实际上是把子集拿出来给modifySelections做修饰？
     return this.props.modifySelections(
-      this.props.selections.map((selection: SelectionNode) => {
+      this.props.selections.map((selection) => {
         if (
           selection.kind === "Field" &&
           this.props.field.name === selection.name.value
@@ -175,18 +188,24 @@ export default class FieldView extends React.PureComponent<
               kind: "SelectionSet",
               selections,
             },
-          } as unknown as SelectionNode;
+          };
         }
         return selection;
       }),
       options
-    );
+    ) as any;
   };
 
   render() {
     const { field, schema, getDefaultFieldNames, styleConfig } = this.props;
+    // console.log("field: ", field.type);
+    // 被勾选的字段
     const selection = this._getSelection();
+    // GraphQLNonNull {ofType: GraphQLObjectType1}
+    // 👇🏻
+    // GraphQLObjectType1
     const type = unwrapOutputType(field.type);
+    // 当前字段接受的查询参数
     const args = field.args.sort((a, b) => a.name.localeCompare(b.name));
     let className = `graphiql-explorer-node graphiql-explorer-${field.name}`;
 
@@ -194,11 +213,10 @@ export default class FieldView extends React.PureComponent<
       className += " graphiql-explorer-deprecated";
     }
 
-    const applicableFragments =
-      isObjectType(type) || isInterfaceType(type) || isUnionType(type)
-        ? this.props.availableFragments &&
-          this.props.availableFragments[type.name]
-        : null;
+    const applicableFragments = getApplicableFragments(
+      this.props.availableFragments,
+      type
+    ) as unknown as FragmentDefinitionNode[];
 
     const node = (
       <div className={className}>
@@ -209,6 +227,8 @@ export default class FieldView extends React.PureComponent<
           data-field-type={type.name}
           onClick={this._handleUpdateSelections}
           onMouseEnter={() => {
+            // 只有在含有可用的子集时，才显示
+            // 这个动作按钮的触发将会将当前的有效子集单独作为一个新的fragment（fragment onType为当前的字段），并
             const containsMeaningfulSubselection =
               isObjectType(type) &&
               selection &&
@@ -216,6 +236,11 @@ export default class FieldView extends React.PureComponent<
               selection.selectionSet.selections.filter(
                 (selection) => selection.kind !== "FragmentSpread"
               ).length > 0;
+
+            console.log(
+              "containsMeaningfulSubselection: ",
+              containsMeaningfulSubselection
+            );
 
             if (containsMeaningfulSubselection) {
               this.setState({ displayFieldActions: true });
@@ -252,13 +277,13 @@ export default class FieldView extends React.PureComponent<
                 // 3. Replace selections in this object with fragment spread
                 // 4. Add fragment to document
                 const typeName = type.name;
+                // NpmPackageDownloadPeriodData 这种应该是预先定义好的， 不是拼接的
                 let newFragmentName = `${typeName}Fragment`;
 
-                const conflictingNameCount = (
-                  (applicableFragments || []) as FragmentDefinitionNode[]
-                ).filter((fragment) => {
-                  return fragment.name.value.startsWith(newFragmentName);
-                }).length;
+                // 查看是否已经有重名的
+                const conflictingNameCount = (applicableFragments || []).filter(
+                  (fragment) => fragment.name.value.startsWith(newFragmentName)
+                ).length;
 
                 if (conflictingNameCount > 0) {
                   newFragmentName = `${newFragmentName}${conflictingNameCount}`;
@@ -270,6 +295,10 @@ export default class FieldView extends React.PureComponent<
                     : []
                   : [];
 
+                // const childSelections =
+                //   selection?.selectionSet?.selections ?? [];
+
+                // 替换原本query中的子集展开
                 const nextSelections = [
                   {
                     kind: "FragmentSpread",
@@ -281,6 +310,7 @@ export default class FieldView extends React.PureComponent<
                   },
                 ];
 
+                // 新插入到explorer中的
                 const newFragmentDefinition: FragmentDefinitionNode = {
                   kind: "FragmentDefinition",
                   name: {
@@ -301,17 +331,22 @@ export default class FieldView extends React.PureComponent<
                   },
                 };
 
+                // commit是控制修改后是否提交查询语句？
+                // 获取修改完毕的
                 const newDoc = this._modifyChildSelections(
-                  nextSelections as unknown as Selections[],
+                  nextSelections as SelectionNode[],
                   { commit: false }
                 );
 
                 if (newDoc) {
-                  const newDocWithFragment = {
+                  // 修改完毕
+                  const newDocWithFragment: DocumentNode = {
                     ...newDoc,
                     definitions: [...newDoc.definitions, newFragmentDefinition],
                   };
 
+                  // 在最顶层的onCommit方法接手解析完毕的doc node，转换为plain string
+                  // 再交给onEdit方法来更新当前面板中的query
                   this.props.onCommit(newDocWithFragment);
                 } else {
                   console.warn("Unable to complete extractFragment operation");
@@ -338,7 +373,7 @@ export default class FieldView extends React.PureComponent<
                 selection={selection}
                 modifyArguments={this._setArguments}
                 getDefaultScalarArgValue={this.props.getDefaultScalarArgValue}
-                makeDefaultArg={this.props.makeDefaultArg}
+                makeDefaultArg={this.props.makeDefaultArg!}
                 onRunOperation={this.props.onRunOperation}
                 styleConfig={this.props.styleConfig}
                 onCommit={this.props.onCommit}

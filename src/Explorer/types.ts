@@ -157,12 +157,12 @@ export type ArgViewProps = {
   parentField: Field,
   arg: GraphQLArgument,
   selection: FieldNode,
-  modifyArguments?: (
+  modifyArguments: (
     argumentNodes: Array<ArgumentNode>,
     options?: { commit: boolean }
   ) => DocumentNode | null | undefined | void,
   getDefaultScalarArgValue: GetDefaultScalarArgValue,
-  makeDefaultArg?: MakeDefaultArg,
+  makeDefaultArg: MakeDefaultArg,
   onRunOperation: () => void,
   styleConfig: StyleConfig,
   onCommit: (newDoc: DocumentNode) => void,
@@ -189,16 +189,16 @@ export type ScalarInputProps = {
 
 
 export type AbstractArgViewProps = {
-  argValue?: ValueNode,
+  argValue?: ValueNode | null,
   arg: GraphQLArgument,
   parentField: Field,
   setArgValue: (
-    event: React.SyntheticEvent<any> | VariableDefinitionNode,
-    commit: boolean
-  ) => DocumentNode | null,
+    event: React.ChangeEvent<any> | VariableDefinitionNode,
+    options?: { commit: boolean }
+  ) => DocumentNode | null | undefined;
   setArgFields: (
     fields: ObjectFieldNode[],
-    commit?: boolean
+    commit: boolean
   ) => DocumentNode | null,
   addArg: (commit: boolean) => DocumentNode | null,
   removeArg: (commit: boolean) => DocumentNode | null,
@@ -271,7 +271,7 @@ export type AbstractViewProps = {
   modifySelections: (
     selections: SelectionNode[],
     tmp?: { commit: boolean },
-  ) => DocumentNode | null | undefined | void,
+  ) => DocumentNode | null,
   schema: GraphQLSchema,
   getDefaultFieldNames: (type: GraphQLObjectType) => Array<string>,
   getDefaultScalarArgValue: GetDefaultScalarArgValue,

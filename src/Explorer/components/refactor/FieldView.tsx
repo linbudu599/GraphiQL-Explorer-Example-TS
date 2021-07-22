@@ -1,5 +1,6 @@
-import { isObjectType } from "graphql";
+import { isInterfaceType, isObjectType, isUnionType } from "graphql";
 import React, { CSSProperties } from "react";
+import { AvailableFragments } from "../../types";
 import { Checkbox } from "../../utils";
 
 export const NODE_STYLES: CSSProperties = {
@@ -36,3 +37,11 @@ export const CheckBoxComp: React.FC<ITmpTinyCompProps> = ({
     <Checkbox checked={!!selection} styleConfig={styleConfig} />
   );
 };
+
+export const getApplicableFragments = (
+  availableFragments: AvailableFragments,
+  type: any
+) =>
+  isObjectType(type) || isInterfaceType(type) || isUnionType(type)
+    ? availableFragments && availableFragments[type.name as any]
+    : null;

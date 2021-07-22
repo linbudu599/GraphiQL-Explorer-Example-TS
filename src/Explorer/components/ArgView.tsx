@@ -1,4 +1,3 @@
-// @ts-nocheck
 import {
   ArgumentNode,
   DocumentNode,
@@ -6,6 +5,7 @@ import {
   isLeafType,
   VariableDefinitionNode,
   ValueNode,
+  ObjectFieldNode,
 } from "graphql";
 import React from "react";
 import { ArgViewProps, ArgViewState } from "../types";
@@ -32,9 +32,10 @@ export default class ArgView extends React.PureComponent<
     const { selection } = this.props;
     const argSelection = this._getArgSelection();
     this._previousArgSelection = argSelection;
+    // @ts-ignore
     return this.props.modifyArguments(
       (selection.arguments || []).filter((arg) => arg !== argSelection),
-      commit
+      { commit }
     );
   };
   _addArg = (commit: boolean): DocumentNode | null => {
@@ -77,25 +78,27 @@ export default class ArgView extends React.PureComponent<
       console.error("Unable to add arg for argType", argType);
       return null;
     } else {
+      // @ts-ignore
       return this.props.modifyArguments(
-        [...(selection.arguments || []), argSelection],
-        commit
+        [...(selection.arguments || []), argSelection] as ArgumentNode[],
+        { commit }
       );
     }
   };
   _setArgValue = (
-    event: React.SyntheticEvent | VariableDefinitionNode,
+    event: React.ChangeEvent<HTMLSelectElement> | VariableDefinitionNode,
     options?: { commit: boolean }
   ) => {
     let settingToNull = false;
     let settingToVariable = false;
     let settingToLiteralValue = false;
+
     try {
-      if (event.kind === "VariableDefinition") {
+      if ("kind" in event && event.kind === "VariableDefinition") {
         settingToVariable = true;
       } else if (event === null || typeof event === "undefined") {
         settingToNull = true;
-      } else if (typeof event.kind === "string") {
+      } else if ("kind" in event && typeof event.kind === "string") {
         settingToLiteralValue = true;
       }
     } catch (e) {}
@@ -103,7 +106,7 @@ export default class ArgView extends React.PureComponent<
     const argSelection = this._getArgSelection();
     if (!argSelection && !settingToVariable) {
       console.error("missing arg selection when setting arg value");
-      return;
+      return null;
     }
     const argType = unwrapInputType(this.props.arg.type);
 
@@ -115,21 +118,30 @@ export default class ArgView extends React.PureComponent<
 
     if (!handleable) {
       console.warn("Unable to handle non leaf types in ArgView._setArgValue");
-      return;
+      return null;
     }
 
     let targetValue: string | VariableDefinitionNode;
-    let value: ValueNode;
+    let value: ValueNode | null;
 
     if (event === null || typeof event === "undefined") {
       value = null;
-    } else if (event.target && typeof event.target.value === "string") {
+    } else if (
+      "target" in event &&
+      event.target &&
+      typeof event.target.value === "string"
+    ) {
       targetValue = event.target.value;
       value = coerceArgValue(argType, targetValue);
+      // @ts-ignore
     } else if (!event.target && event.kind === "VariableDefinition") {
+      // @ts-ignore
       targetValue = event;
+      // @ts-ignore
       value = targetValue.variable;
+      // @ts-ignore
     } else if (typeof event.kind === "string") {
+      // @ts-ignore
       value = event;
     }
 
@@ -138,22 +150,27 @@ export default class ArgView extends React.PureComponent<
         a === argSelection
           ? {
               ...a,
-              value: value,
+              value: value!,
             }
           : a
       ),
-      options
+      { commit: options?.commit! }
     );
   };
 
-  _setArgFields = (fields, commit: boolean): DocumentNode | null => {
+  _setArgFields = (
+    fields: ObjectFieldNode[],
+    commit: boolean
+  ): DocumentNode | null => {
     const { selection } = this.props;
     const argSelection = this._getArgSelection();
+
     if (!argSelection) {
       console.error("missing arg selection when setting arg value");
-      return;
+      return null;
     }
 
+    // @ts-ignore
     return this.props.modifyArguments(
       (selection.arguments || []).map((a) =>
         a === argSelection
@@ -166,7 +183,7 @@ export default class ArgView extends React.PureComponent<
             }
           : a
       ),
-      commit
+      { commit }
     );
   };
 
@@ -182,6 +199,7 @@ export default class ArgView extends React.PureComponent<
         addArg={this._addArg}
         removeArg={this._removeArg}
         setArgFields={this._setArgFields}
+        // @ts-ignore
         setArgValue={this._setArgValue}
         getDefaultScalarArgValue={this.props.getDefaultScalarArgValue}
         makeDefaultArg={this.props.makeDefaultArg}
