@@ -3721,10 +3721,15 @@ codemirror-graphql@^1.0.0:
     graphql-language-service-interface "^2.8.2"
     graphql-language-service-parser "^1.9.0"
 
-codemirror@^5.54.0, codemirror@^5.62.0:
+codemirror@^5.54.0:
   version "5.62.0"
   resolved "https://registry.yarnpkg.com/codemirror/-/codemirror-5.62.0.tgz#e9ecd012e6f9eaf2e05ff4a449ff750f51619e22"
   integrity sha512-Xnl3304iCc8nyVZuRkzDVVwc794uc9QNX0UcPGeNic1fbzkSrO4l4GVXho9tRNKBgPYZXgocUqXyfIv3BILhCQ==
+
+codemirror@^5.64.0:
+  version "5.64.0"
+  resolved "https://registry.yarnpkg.com/codemirror/-/codemirror-5.64.0.tgz#182eec65b62178e3cd1de8f9d88ab819cfe5f625"
+  integrity sha512-fqr6CtDQdJ6iNMbD8NX2gH2G876nNDk+TO1rrYkgWnqQdO3O1Xa9tK6q+psqhJJgE5SpbaDcgdfLmukoUVE8pg==
 
 collapse-white-space@^1.0.2:
   version "1.0.6"
