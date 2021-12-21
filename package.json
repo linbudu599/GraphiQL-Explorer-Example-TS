@@ -30,7 +30,7 @@
   },
   "license": "MIT",
   "dependencies": {
-    "codemirror": "^5.62.0",
+    "codemirror": "^5.65.0",
     "graphiql": "^1.4.2",
     "graphiql-explorer": "^0.6.3",
     "graphql": "^15.5.1",
